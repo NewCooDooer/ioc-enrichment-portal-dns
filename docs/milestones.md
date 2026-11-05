@@ -292,5 +292,5 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Found by re-running everything on a fresh clone of `main` (2026-11-05): crt.sh good answers took 21, 30, 32 and 54 s, so the 25 s timeout threw away real answers; and RDAP answered "not found" for a real `.de` domain because rdap.org has no RDAP server for that TLD (also `.io`).
 - Fixed: crt.sh timeout 25 s to 60 s; the frontend now waits 75 s (it must outlast the backend, enforced by a new test); the RDAP "not found" message in the UI, README, design.md and the RDAP source docstring now lists all three meanings (no such domain, subdomain, TLD not covered).
 - Verified: 50 tests pass offline (also under the network-deny sandbox); the new test fails if the timeout is set back to 25 s; live runs against example.com, wikipedia.org and github.com (765 certificates, name list truncated at 50). crt.sh still fails most calls (HTTP 502, and sometimes 404), which the portal reports as an error for that source only.
-- Pull request: _filled in after it is opened_
+- Pull request: #4 "Fix: crt.sh timeout too short, RDAP not-found wording": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/4
 

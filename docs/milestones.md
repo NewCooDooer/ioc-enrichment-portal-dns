@@ -317,6 +317,6 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Branch: `fix/frontend-localhost-only`
 - Found while writing the study guide: Streamlit printed a "Network URL" at startup. Measured before the fix: the page listened on `*:8510` and this Mac's own LAN address returned the full page (HTTP 200), so anyone on the same network could run lookups through it. The backend was already safe (`127.0.0.1`).
 - Fixed: `[server] address = "127.0.0.1"` in `.streamlit/config.toml`; README and design.md updated; `tests/test_config.py` asserts both parts default to localhost.
-- Verified after the fix: see the pull request description.
-- Pull request: _filled in after it is opened_
+- Verified after the fix: the page listens on 127.0.0.1:8510 only; localhost returns HTTP 200 and the Mac's LAN address is refused for both the page and the backend; 80 tests pass; re-binding to 0.0.0.0 makes the new test fail.
+- Pull request: #7 "Fix: web page listens on localhost only": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/7
 

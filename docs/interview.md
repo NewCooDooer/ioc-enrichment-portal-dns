@@ -6,7 +6,7 @@ Claude interviewed me one question at a time before drafting `design.md`. Questi
 | # | Question | My answer | Effect on design |
 |---|---|---|---|
 | 1 | Who calls the portal, and how? | Analyst UI **plus other programs** | **Changed the design.** The API contract becomes the product: versioned `/api/v1/`, one stable error format, per-source status, ports configurable. The UI is just one client. |
-| 2 | Which three sources for DNS names? | **DoH + RDAP + crt.sh** (all keyless) | **Changed the design.** No keys in v1, so section 8 is mostly about *values* that must not leave the machine. It also forced a crt.sh failure plan: it returned HTTP 502 during live testing. |
+| 2 | Which three sources for DNS names? | **DoH + RDAP + crt.sh** (all keyless) | **Changed the design.** No keys in v1, so section 7 is mostly about *values* that must not leave the machine. It also forced a crt.sh failure plan: it returned HTTP 502 during live testing. |
 | 3 | Which stack? | **FastAPI + Streamlit** | Async fan-out to three sources; typed models for the contract; pure-Python frontend. |
 | 4 | How do tests replay real responses? | **Saved JSON fixtures + respx** | No cassettes, no recorded headers, so keys cannot leak into recordings. |
 | 5 | How does a failed source appear? | **Per-source status block, HTTP 200**; 502 only if all fail | **Changed the design.** Adds `ok` / `not_found` / `error` with `error.code`, so callers can tell "no data" from "source failed", and partial results survive. |

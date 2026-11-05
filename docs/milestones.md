@@ -3,7 +3,7 @@
 Evidence for each milestone (commands, JSON, screenshots, pull requests). Updated as work lands.
 
 ## Milestone 0: design
-- Status: in review
+- Status: done (merged via PR #1)
 - Branch: `docs/design-md`
 - Evidence: `design.md`, `docs/interview.md`; draft checked against the 8 required topics and project requirements in plan mode (2026-11-05)
 - Pull request: #1 "Milestone 0: design.md for DNS-name IOC enrichment portal"

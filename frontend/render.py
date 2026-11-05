@@ -88,11 +88,20 @@ def source_window(key: str, block: dict) -> str:
     )
 
 
+def _pretty_json_html(body: dict) -> str:
+    """Indented JSON as HTML. Streamlit's markdown pass collapses newlines and spaces even inside <pre>,
+    so line breaks are explicit <br> and the indentation is explicit &nbsp;. Every value is escaped."""
+    lines = []
+    for line in json.dumps(body, indent=2).split("\n"):
+        text = line.lstrip(" ")
+        lines.append("&nbsp;" * (len(line) - len(text)) + esc(text))
+    return "<br>".join(lines)
+
+
 def raw_json_window(body: dict) -> str:
-    pretty = json.dumps(body, indent=2)
     return theme.window(
         "Raw JSON from the backend",
-        f'<details><summary>Show</summary><pre class="w95-pre">{esc(pretty)}</pre></details>',
+        f'<details><summary>Show</summary><div class="w95-pre">{_pretty_json_html(body)}</div></details>',
     )
 
 

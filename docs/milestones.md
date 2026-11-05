@@ -301,5 +301,15 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Rules built in and tested (`tests/test_mascot.py`, `tests/test_theme.py`): Tim never gives a verdict (clean / safe / malicious / benign / trusted); a source that could not be checked is never described as "no data"; every source-supplied string is HTML-escaped (a crt.sh certificate name such as `<script>...` renders as text).
 - Verified: 76 tests pass (26 new); four deliberate breaks (a verdict word, "no data" wording, no escaping in the tables, no escaping in the speech bubble) each made the matching tests fail, then were reverted; the page contacts only `localhost` (checked with the browser's resource list), its only image is an embedded data URI; keyboard Tab reaches the input and button with a visible dotted focus ring; the 375 px phone layout stacks Tim above his bubble.
 - Evidence: `docs/screenshots/win95-1-idle.jpg` to `win95-6-mobile.jpg` (real lookups of example.com against the live services, including a real crt.sh failure).
+- Status: done (merged via PR #5)
 - Pull request: #5 "Frontend: Windows 95 theme with Trojan Tim": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/5
+
+## Follow-up fix to the theme: icon font, Streamlit popup, Raw JSON layout
+- Branch: `fix/theme-icons-raw-json`
+- Found when the owner ran the app and sent screenshots: (1) a Streamlit developer popup ("Help agents write better apps ... Install the official Streamlit skills") appeared with garbled text, "auto_awesome" and "close" printed as words; (2) the Raw JSON panel showed the JSON flattened into one paragraph (I had only ever screenshotted that panel closed).
+- Causes, reproduced in the browser first: (1) my theme CSS forced the Windows 95 font onto every `span`, including Streamlit's icon elements (`data-testid="stIconMaterial"`), so icon names rendered as text; the popup itself is Streamlit's own promo for app developers (`stSkillsNudge`), not part of this project; (2) Streamlit's markdown pass collapses newlines and spaces even inside `<pre>`.
+- Fixed: the font rule now skips icon elements and the icon font is restored explicitly; the developer popup is hidden; the Raw JSON uses explicit `<br>` line breaks and `&nbsp;` indentation (every value still HTML-escaped).
+- Verified: 78 tests pass (2 new); three deliberate breaks (icons overridden again, popup shown again, back to `<pre>`) each failed the matching test; in the live page an element with Streamlit's icon marker gets "Material Symbols Rounded" (a 16 px glyph, not a 12-letter word), an element with the popup marker is `display: none`, and normal text keeps the Windows 95 font; the opened Raw JSON panel shows indented lines (`docs/screenshots/win95-7-raw-json-open.jpg`).
+- Not verified: Streamlit decided not to show the popup again after its first appearance on this machine, so I confirmed the hiding rule on a stand-in element carrying the same marker, not on the real popup.
+- Pull request: _filled in after it is opened_
 

@@ -10,11 +10,15 @@ from datetime import datetime
 CSS = """
 :root { --gray:#c0c0c0; --dark:#808080; --light:#ffffff; --black:#000000; --navy:#000080; --teal:#008080; }
 html, body, .stApp, [data-testid="stAppViewContainer"] { background: var(--teal) !important; }
-.stApp, .stApp p, .stApp label, .stApp span, .stApp li {
+.stApp, .stApp p, .stApp label, .stApp span:not([data-testid="stIconMaterial"]), .stApp li {
   font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Verdana, Geneva, sans-serif;
   color: var(--black);
 }
+/* Streamlit draws its own icons with an icon font. Never override it: the icon names would show up as plain words. */
+[data-testid="stIconMaterial"] { font-family: "Material Symbols Rounded" !important; }
 [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], footer { display: none !important; }
+/* Streamlit's "install skills for AI coding agents" promo is for app developers, not for people using the portal. */
+[data-testid="stSkillsNudge"] { display: none !important; }
 [data-testid="stMainBlockContainer"], .block-container { max-width: 780px; padding: 1.2rem 1rem 4.5rem !important; }
 
 /* Windows ----------------------------------------------------------------------------------------------------- */

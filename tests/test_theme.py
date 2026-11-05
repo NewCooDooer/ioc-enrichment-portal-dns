@@ -53,6 +53,22 @@ def test_raw_json_window_escapes_the_body():
     assert "<script" not in out and "&lt;script&gt;" in out and balanced(out)
 
 
+def test_raw_json_keeps_its_line_breaks_and_indentation():
+    out = render.raw_json_window({"a": {"b": [1, 2]}, "c": "x"})
+    # json.dumps(indent=2) of this body is 9 lines, so 8 explicit line breaks; nested values are indented with &nbsp;
+    assert out.count("<br>") == 8
+    assert "&nbsp;&nbsp;&nbsp;&nbsp;" in out
+    assert "<pre" not in out  # a <pre> block is what lost the formatting in Streamlit
+
+
+def test_streamlit_icons_keep_their_icon_font_and_the_developer_promo_is_hidden():
+    css = theme.CSS
+    # The page font must not be forced onto Streamlit's icon elements (they would show as words like "auto_awesome").
+    assert '.stApp span:not([data-testid="stIconMaterial"])' in css
+    assert '[data-testid="stIconMaterial"] { font-family: "Material Symbols Rounded" !important; }' in css
+    assert '[data-testid="stSkillsNudge"] { display: none !important; }' in css
+
+
 def test_not_found_and_error_states_have_the_right_words():
     nf = render.source_window("rdap", {"status": "not_found", "data": None})
     assert "Not found" in nf and ".de or .io" in nf and "subdomains" in nf

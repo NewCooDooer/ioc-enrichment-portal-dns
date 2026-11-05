@@ -1,0 +1,104 @@
+"""Turns the backend's JSON into Windows-95 HTML. Every value that came from a source is escaped here."""
+
+import html
+import json
+
+import theme
+
+TITLES = {
+    "dns": "DNS - Google Public DNS.exe",
+    "rdap": "RDAP - Registration.exe",
+    "crtsh": "crt.sh - Certificates.exe",
+}
+
+
+def esc(value) -> str:
+    return html.escape("" if value is None else str(value))
+
+
+def table(headers: list[str], rows: list[list], key_value: bool = False) -> str:
+    """An escaped table. key_value=True keeps the first column on one line (labels such as "Last changed")."""
+    head = "".join(f"<th>{esc(h)}</th>" for h in headers)
+    body = "".join("<tr>" + "".join(f"<td>{esc(cell)}</td>" for cell in row) + "</tr>" for row in rows)
+    css = "w95-table w95-kv" if key_value else "w95-table"
+    return f'<div class="w95-scroll"><table class="{css}"><tr>{head}</tr>{body}</table></div>'
+
+
+def _ok_banner() -> str:
+    return '<p class="w95-status">OK: the source answered with data.</p>'
+
+
+def dns_body(data: dict) -> str:
+    parts = [_ok_banner()]
+    for rtype in ("A", "AAAA", "NS", "MX", "TXT"):
+        records = data.get(rtype, [])
+        parts.append(f"<h4>{rtype}</h4>")
+        if records:
+            parts.append(table(["value", "ttl (s)"], [[r["value"], r["ttl"]] for r in records]))
+        else:
+            parts.append("<p>no records</p>")
+    return "".join(parts)
+
+
+def rdap_body(data: dict) -> str:
+    rows = [
+        ["Registrar", data.get("registrar") or "not stated"],
+        ["Registered", data.get("registered") or "not stated"],
+        ["Expires", data.get("expires") or "not stated"],
+        ["Last changed", data.get("last_changed") or "not stated"],
+        ["Status flags", ", ".join(data.get("statuses", [])) or "none"],
+        ["Name servers", ", ".join(data.get("nameservers", [])) or "none"],
+    ]
+    return _ok_banner() + table(["field", "value"], rows, key_value=True) + f"<p>Registry record: {esc(data.get('registry_url'))}</p>"
+
+
+def crtsh_body(data: dict) -> str:
+    summary = (
+        f"<p><b>{esc(data['certificate_count'])}</b> certificates, first seen <b>{esc(data['first_seen'])}</b>, "
+        f"most recent <b>{esc(data['last_seen'])}</b></p>"
+    )
+    issuers = table(["issuer"], [[i] for i in data["issuers"]])
+    names = table(["names on the certificates"], [[n] for n in data["names"]])
+    note = "<p>List truncated; more names exist.</p>" if data.get("names_truncated") else ""
+    return _ok_banner() + summary + "<h4>Issuers</h4>" + issuers + f"<h4>Names ({esc(len(data['names']))} shown)</h4>" + names + note
+
+
+_BODIES = {"dns": dns_body, "rdap": rdap_body, "crtsh": crtsh_body}
+
+NOT_FOUND_TEXT = "Not found: the source answered that it knows nothing about this name."
+RDAP_EXTRA = (
+    " For RDAP this also happens for subdomains (RDAP only covers registered domains) and for "
+    "top-level domains rdap.org does not cover, such as .de or .io."
+)
+
+
+def source_window(key: str, block: dict) -> str:
+    """One window per source. ok = data table; not_found = info box; error = error box."""
+    title = TITLES.get(key, key)
+    if block["status"] == "ok":
+        return theme.window(title, _BODIES[key](block["data"]))
+    if block["status"] == "not_found":
+        return theme.dialog("info", title, NOT_FOUND_TEXT + (RDAP_EXTRA if key == "rdap" else ""))
+    err = block.get("error") or {}
+    return theme.dialog(
+        "error",
+        title,
+        f"Error ({err.get('code', 'unknown')}): {err.get('message', '')}. "
+        "This does NOT mean there is no data; the check could not be completed.",
+    )
+
+
+def raw_json_window(body: dict) -> str:
+    pretty = json.dumps(body, indent=2)
+    return theme.window(
+        "Raw JSON from the backend",
+        f'<details><summary>Show</summary><pre class="w95-pre">{esc(pretty)}</pre></details>',
+    )
+
+
+def intro_window() -> str:
+    return theme.window(
+        "IOC Enrichment Portal: DNS names",
+        "<p>Enter a domain name to see context from public sources. These sources report facts; none of them gives a verdict.</p>"
+        "<p><b>Do not enter internal or private names:</b> lookups go to outside services.</p>",
+    )

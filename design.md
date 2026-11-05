@@ -30,7 +30,7 @@ Browser → Streamlit frontend (:8510) ──HTTP/JSON──► FastAPI backend 
   default `http://127.0.0.1:8010`) and never a source.
 - The backend validates the input, queries the three sources **concurrently** (`asyncio` + `httpx`, 10 s timeout each; crt.sh gets 60 s because good answers took 16 to 54 s; the frontend waits up to 75 s),
   and returns one merged JSON object. Source errors never crash it.
-- Frontend: one text box and button; one card per source (ok / not found / error + message); clear messages for 400/502.
+- Frontend: one text box and button; one window per source (ok / not found / error + message); clear messages for 400/502. Presentation is a Windows 95 desktop with a mascot, **Trojan Tim** (see the decision below); it changes nothing about the API.
 - Ports are configurable (`BACKEND_PORT`, `FRONTEND_PORT`). Defaults avoid 8000/8501 so two portals can share a laptop.
 
 ## 3. Stack and decisions (with reasons)
@@ -47,6 +47,7 @@ Browser → Streamlit frontend (:8510) ──HTTP/JSON──► FastAPI backend 
 | Containers | None | Allowed (max two); Docker is not installed; fewer moving parts. |
 | Python | 3.11+ (dev: 3.14.7) | Wheels for all dependencies verified on 3.14 in M1; versions pinned in `requirements.txt`. |
 | Repo visibility | **Public** | Course says private, but the instructor must evaluate it; no keys, fixtures hold only public data. |
+| Frontend look | Custom CSS in `frontend/theme.py` (Windows 95), mascot in `frontend/mascot.py`, HTML in `frontend/render.py` | Owner's choice (an optional extra after M2). System fonts only and the mascot is an embedded image: the page loads nothing from outside. **Content rules:** Tim states facts and never a verdict (no clean/safe/malicious/benign/trusted); a source that could not be checked never reads as "no data"; every string that came from a source is HTML-escaped (crt.sh names are attacker-influenced). All three rules are tested. |
 
 ## 4. API contract (version 1)
 

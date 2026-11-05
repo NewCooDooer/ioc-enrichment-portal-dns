@@ -294,3 +294,12 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Verified: 50 tests pass offline (also under the network-deny sandbox); the new test fails if the timeout is set back to 25 s; live runs against example.com, wikipedia.org and github.com (765 certificates, name list truncated at 50). crt.sh still fails most calls (HTTP 502, and sometimes 404), which the portal reports as an error for that source only.
 - Pull request: #4 "Fix: crt.sh timeout too short, RDAP not-found wording": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/4
 
+## Extra (optional): Windows 95 theme with Trojan Tim
+- Branch: `feat/win95-theme` (planned in plan mode first; the owner chose the look and the mascot's personality)
+- Scope: presentation only. No change to the backend, the API contract or `frontend/client.py`; no new dependencies.
+- What it adds: a Windows 95 desktop (beveled windows, title bars, taskbar, error dialogs) and a mascot, Trojan Tim, who gives instructions and narrates results.
+- Rules built in and tested (`tests/test_mascot.py`, `tests/test_theme.py`): Tim never gives a verdict (clean / safe / malicious / benign / trusted); a source that could not be checked is never described as "no data"; every source-supplied string is HTML-escaped (a crt.sh certificate name such as `<script>...` renders as text).
+- Verified: 76 tests pass (26 new); four deliberate breaks (a verdict word, "no data" wording, no escaping in the tables, no escaping in the speech bubble) each made the matching tests fail, then were reverted; the page contacts only `localhost` (checked with the browser's resource list), its only image is an embedded data URI; keyboard Tab reaches the input and button with a visible dotted focus ring; the 375 px phone layout stacks Tim above his bubble.
+- Evidence: `docs/screenshots/win95-1-idle.jpg` to `win95-6-mobile.jpg` (real lookups of example.com against the live services, including a real crt.sh failure).
+- Pull request: #5 "Frontend: Windows 95 theme with Trojan Tim": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/5
+

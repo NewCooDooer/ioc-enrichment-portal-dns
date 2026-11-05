@@ -5,8 +5,8 @@ Evidence for each milestone (commands, JSON, screenshots, pull requests). Update
 ## Milestone 0: design
 - Status: in review
 - Branch: `docs/design-md`
-- Evidence: `design.md`, `docs/interview.md`
-- Pull request: _filled in after opening_
+- Evidence: `design.md`, `docs/interview.md`; draft checked against the 8 required topics and project requirements in plan mode (2026-11-05)
+- Pull request: #1 "Milestone 0: design.md for DNS-name IOC enrichment portal"
 
 ## Milestone 1: thinnest slice (Google DoH)
 - Status: not started

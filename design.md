@@ -1,6 +1,6 @@
 # IOC Enrichment Portal (DNS names): design
 
-Status: **draft for Planning milestone** · Last updated: 2026-11-05 · Owner: Evan Murphy
+Status: **ready for review (Milestone 0)** · Last updated: 2026-11-05 · Owner: Evan Murphy
 Read this file before changing the API or adding a feature (see `CLAUDE.md`).
 
 ## 1. Goal
@@ -41,13 +41,7 @@ the Sysmon portal), so the **API contract is the product**; the web page is one 
 - Ports are configurable: `BACKEND_PORT` (default 8010), `FRONTEND_PORT` (default 8510). Defaults avoid the
   common 8000/8501 so two portals can share one laptop in the Sysmon project.
 
-Planned layout (final names may shift; update this file when they do):
-
-```
-backend/app/{main.py, config.py, validation.py, models.py, sources/{doh.py,rdap.py,crtsh.py}, service.py}
-frontend/app.py
-tests/{fixtures/, test_*.py}   scripts/record_fixtures.py   docs/   .env.example
-```
+Planned layout: `backend/app/` (main, config, validation, models, `sources/`), `frontend/app.py`, `tests/` (with `fixtures/`), `scripts/record_fixtures.py`, `docs/`, `.env.example`. Update this file if it changes.
 
 ## 3. Stack and decisions (each with its reason)
 
@@ -56,7 +50,8 @@ tests/{fixtures/, test_*.py}   scripts/record_fixtures.py   docs/   .env.example
 | Backend framework | **FastAPI** + uvicorn | Typed response models make the contract executable and auto-generate OpenAPI docs; native async lets three slow sources run in parallel. Would change if the async code proved hard to debug. |
 | HTTP client | **httpx** (async) | One client for all sources; `respx` mocks it cleanly in tests. Follows redirects (needed for rdap.org, `follow_redirects=True`). |
 | Frontend | **Streamlit** | Pure Python, minimal code, calls the backend with `httpx`/`requests`. Would change if we needed custom layout. |
-| Validation | **stdlib** (`re`, `idna`-style via `str.encode("idna")`) | No extra dependency. |
+| Validation | **stdlib** (`re`, `str.encode("idna")`) | No extra dependency. Caveat: Python's built-in codec is IDNA 2003 and may reject some valid names; M1 checks this, and if it fails we switch to the `idna` package. |
+| Repository visibility | **Public** GitHub repo | The course requirement says private, but the instructor must be able to evaluate the work. Safe because there are no keys, and fixtures hold only public data. Deviation approved by the owner. |
 | Tests | **pytest + respx + pytest-socket** | Replay fixtures through the real parsing code; `pytest-socket` blocks all sockets so "network off" is *enforced*, not assumed. |
 | Fixtures | **Saved JSON files** in `tests/fixtures/` loaded by tests | Readable, reviewable diffs, no hidden headers (a recorder script saves status and body only), easy for a classmate to read. Chosen over VCR cassettes, which can capture headers/keys. |
 | Config | Environment variables, optional `.env` (python-dotenv) | Keys (none yet) never touch code. |
@@ -166,10 +161,8 @@ Breaking changes go to `/api/v2/`; v1 keeps working.
 | **RDAP via rdap.org** `https://rdap.org/domain/{name}` ([about](https://about.rdap.org/)) | No | **10 requests per 10 s** (Cloudflare), then 429. Higher limits only for supporters. | Redirects (302) to the registry's own RDAP server → client must follow redirects. 404 = no authoritative service known or no such domain. 403 = blocked for abuse. No formal ToS; only aggregated stats collected. Heavy users are told to use the IANA bootstrap files directly. |
 | **crt.sh** `https://crt.sh/?q={name}&output=json` | No | **None published.** Community reports suggest ≈5 requests/minute/IP (unverified, vendor blogs). Real observation: **HTTP 502 on 2026-11-05** (two attempts). | No official terms or API documentation found (page shows only "© Sectigo Limited 2015-2026"). Operated by Sectigo as a public service. Treat as fair use: one call per user request, no bulk. **Open item: re-check before Milestone 2 merge.** |
 
-Observed real behaviors (2026-11-05): DoH `example.com` → NOERROR with 2 A records; RDAP `example.com` →
-302 to `rdap.verisign.com`, then 200; RDAP for a nonexistent `.com` → 404; crt.sh → 502.
-
-"None published" ≠ unlimited: tests never call these services (section 9), and the portal makes at most one call per source per lookup.
+Observed 2026-11-05: DoH `example.com` → 2 A records; RDAP → 302 to `rdap.verisign.com`, then 200 (nonexistent `.com` → 404); crt.sh → 502.
+"None published" ≠ unlimited: tests never call these services (section 9).
 
 ## 7. Where the work is split: frontend ↔ backend
 
@@ -200,6 +193,7 @@ Observed real behaviors (2026-11-05): DoH `example.com` → NOERROR with 2 A rec
 - Cases per source: **hit** (`example.com`), **unknown** (a nonexistent name), **error** (recorded 502 from crt.sh;
   429 and timeout are simulated by respx from the recorded shape, and labeled as simulated).
 - Plus: validation unit tests (good/bad inputs), contract tests on the merged response, and the 502 "all failed" case.
+- Frontend: the function that calls the backend is unit-tested with respx (200, 400, 502, backend down); the Streamlit page itself is checked by hand with a screenshot.
 - Fixtures are reviewed before commit: grep for `key`, `token`, `Authorization` (none expected).
 
 ## 10. Milestones

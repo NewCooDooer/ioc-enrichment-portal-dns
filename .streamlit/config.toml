@@ -12,3 +12,8 @@ toolbarMode = "minimal"
 
 [browser]
 gatherUsageStats = false
+
+# Only this computer may open the page. Streamlit's default is every network interface, which would let anyone on the
+# same network run lookups through this machine. Change it only on purpose (e.g. a trusted lab network).
+[server]
+address = "127.0.0.1"

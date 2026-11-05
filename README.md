@@ -38,7 +38,8 @@ Start the frontend (terminal 2):
 streamlit run frontend/app.py --server.port "${FRONTEND_PORT:-8510}"
 ```
 
-Open http://localhost:8510 and type a name such as `example.com`. The API itself is at http://127.0.0.1:8010
+Open http://localhost:8510 and type a name such as `example.com`. Both parts listen on this computer only (`127.0.0.1`); 
+the page's address is set in `.streamlit/config.toml` and the backend's in `BACKEND_HOST`. Change them only on purpose, because anyone who can reach the page can run lookups through your machine. The API itself is at http://127.0.0.1:8010
 (interactive docs at `/docs`).
 
 ### Configuration (environment variables or a `.env` file; see `.env.example`)

@@ -31,6 +31,7 @@ Browser → Streamlit frontend (:8510) ──HTTP/JSON──► FastAPI backend 
 - The backend validates the input, queries the three sources **concurrently** (`asyncio` + `httpx`, 10 s timeout each; crt.sh gets 60 s because good answers took 16 to 54 s; the frontend waits up to 75 s),
   and returns one merged JSON object. Source errors never crash it.
 - Frontend: one text box and button; one window per source (ok / not found / error + message); clear messages for 400/502. Presentation is a Windows 95 desktop with a mascot, **Trojan Tim** (see the decision below); it changes nothing about the API.
+- Both parts listen on `127.0.0.1` only (`BACKEND_HOST`; `[server] address` in `.streamlit/config.toml`). Streamlit's default is every network interface, which would let others on the network run lookups through this machine.
 - Ports are configurable (`BACKEND_PORT`, `FRONTEND_PORT`). Defaults avoid 8000/8501 so two portals can share a laptop.
 
 ## 3. Stack and decisions (with reasons)

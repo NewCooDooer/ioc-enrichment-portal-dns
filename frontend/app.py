@@ -70,7 +70,8 @@ def render_source(key: str, block: dict) -> None:
             RENDERERS[key](block["data"])
         elif status == "not_found":
             st.info("Not found: the source answered that it knows nothing about this name."
-                    + (" RDAP only covers registered domains, so subdomains usually show this." if key == "rdap" else ""))
+                    + (" For RDAP this also happens for subdomains (RDAP only covers registered domains) and for "
+                       "top-level domains rdap.org does not cover, such as .de or .io." if key == "rdap" else ""))
         else:
             err = block.get("error", {})
             st.error(f"Error ({err.get('code', 'unknown')}): {err.get('message', '')} "
@@ -81,7 +82,7 @@ if submitted:
     if not name.strip():
         st.warning("Please type a DNS name.")
     else:
-        with st.spinner("Asking the backend..."):
+        with st.spinner("Asking the backend... (crt.sh is slow and can take up to a minute)"):
             result = fetch_domain(name)
         if result.status_code is None:
             st.error(result.message)

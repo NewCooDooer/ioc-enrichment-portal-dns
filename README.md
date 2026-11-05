@@ -65,8 +65,9 @@ Each source in the response has a `status`: `ok`, `not_found` (the source answer
 `error` (the check could not be completed; `error.code` and `error.message` say why). A failing source never changes the
 HTTP status; only when **all** sources fail does the API return 502. See [`design.md`](design.md) section 4 for the full contract.
 
-Notes: **crt.sh is slow and often returns HTTP 502**, so expect its card to show an error some of the time. RDAP only covers
-registered domains, so a subdomain such as `login.example.com` normally shows RDAP "not found".
+Notes: **crt.sh is slow (up to about a minute) and often returns HTTP 502**, so a lookup can take a while and its card shows an error some of
+the time. RDAP "not found" can mean three things: the name does not exist, it is a subdomain (RDAP only covers registered domains, so
+`login.example.com` normally shows "not found"), or its top-level domain is not covered by rdap.org (seen for `.de` and `.io`).
 
 ### See a source fail on purpose
 

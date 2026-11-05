@@ -51,3 +51,12 @@ def test_unreadable_backend_response():
         mock.get(f"{BASE}/api/v1/domain/example.com").mock(return_value=httpx.Response(500, text="oops"))
         result = fetch_domain("example.com", base_url=BASE)
     assert result.status_code == 500 and "unreadable" in result.message
+
+
+def test_frontend_waits_longer_than_the_backend_waits_for_crtsh():
+    """If the page gave up before the backend does, a slow-but-good crt.sh answer would be lost."""
+    from backend.app import config
+    from client import DEFAULT_TIMEOUT_SECONDS
+
+    assert DEFAULT_TIMEOUT_SECONDS > config.CRTSH_TIMEOUT_SECONDS
+    assert config.CRTSH_TIMEOUT_SECONDS >= 54  # the slowest good crt.sh answer seen on 2026-11-05

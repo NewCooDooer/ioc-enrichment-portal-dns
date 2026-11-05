@@ -9,7 +9,7 @@ Evidence for each milestone (commands, JSON, screenshots, pull requests). Update
 - Pull request: #1 "Milestone 0: design.md for DNS-name IOC enrichment portal"
 
 ## Milestone 1: thinnest slice (Google DoH)
-- Status: built and verified 2026-11-05; PR number filled in when opened
+- Status: built and verified 2026-11-05; PR #2 open for review
 - Branch: `feat/milestone-1`
 - Plan: written in plan mode from `design.md` and approved before any code
 - Source: Google Public DNS over HTTPS (keyless). Python 3.14.7, FastAPI 0.162.0, Streamlit 1.67.0, httpx 0.28.1
@@ -73,7 +73,7 @@ Also verified: a nonexistent name returns 200 with `"dns": {"status": "not_found
 - `"type": "domain"` was missing from `ioc` because `response_model_exclude_unset` dropped a default value; the service now sets it explicitly.
 
 ### Pull request
-_filled in after the PR is opened_
+#2 "Milestone 1: thinnest slice (Google DoH, FastAPI + Streamlit)": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/2
 
 ## Milestone 2: three sources, recorded tests
 - Status: not started

@@ -40,12 +40,12 @@ Browser → Streamlit frontend (:8510) ──HTTP/JSON──► FastAPI backend 
 | Backend | **FastAPI** + uvicorn | Async runs three slow sources in parallel; typed models make the contract executable. Change if async proves hard to debug. |
 | HTTP client | **httpx** | One client for all sources; follows redirects (rdap.org needs it); `respx` mocks it. |
 | Frontend | **Streamlit** | Pure Python, minimal code for a one-box page. Change if we need a custom layout. |
-| Validation | stdlib `re` + `str.encode("idna")` | No extra dependency. Built-in codec is IDNA 2003 and may reject valid names; M1 checks, else use the `idna` package. |
+| Validation | stdlib `re` + `str.encode("idna")` | No extra dependency. Built-in codec is IDNA 2003 and may reject some valid names; M1 tests `bücher.de` fine. Switch to the `idna` package if a real name fails. |
 | Tests | **pytest + respx + pytest-socket** | Replay fixtures through the real parsing code; pytest-socket makes any real network call fail. |
 | Fixtures | Saved JSON in `tests/fixtures/` | Readable, reviewable, no hidden headers that could hold a key. Chosen over vcrpy cassettes. |
 | Config | Environment variables, optional `.env` | Secrets never in code. |
 | Containers | None | Allowed (max two); Docker is not installed; fewer moving parts. |
-| Python | 3.11+ (dev: 3.14.7) | Verify dependency wheels on 3.14 in M1. |
+| Python | 3.11+ (dev: 3.14.7) | Wheels for all dependencies verified on 3.14 in M1; versions pinned in `requirements.txt`. |
 | Repo visibility | **Public** | Course says private, but the instructor must evaluate it; no keys, fixtures hold only public data. |
 
 ## 4. API contract (version 1)
@@ -93,6 +93,7 @@ crt.sh `data` is a summary: `certificate_count`, `first_seen`, `last_seen`, up t
 | 500 | Unexpected bug | `{"error": "internal error"}` (details logged only) |
 
 One failing source never changes the status code; the others still return. This backend returns no 429 in v1.
+Unknown routes return 404 `{"error": "not found"}` in the same format. The path parameter accepts slashes so a pasted URL gets a 400, not a 404.
 
 ## 5. Data sources (provider pages, checked 2026-11-05)
 
@@ -128,7 +129,7 @@ One failing source never changes the status code; the others still return. This 
 **Milestone 0: design.** Done when this file covers the eight required topics, interview notes exist in `docs/interview.md`,
 and it is merged to `main` through a pull request. ✔ PR #1.
 
-**Milestone 1: thinnest slice (Google DoH only).** Done when:
+**Milestone 1: thinnest slice (Google DoH only).** Evidence in `docs/milestones.md`. Done when:
 1. `GET /api/v1/domain/example.com` returns `ioc` + `dns` as in the contract.
 2. `/api/v1/domain/10.0.0.1` and `/api/v1/domain/not%20a%20name` return 400 with the error body, no stack trace.
 3. The Streamlit page shows the result for a typed name, via the backend only.
@@ -147,4 +148,4 @@ and it is merged to `main` through a pull request. ✔ PR #1.
 ## 9. Open questions
 
 Cloudflare DoH as a fallback (default no) · record types beyond A/AAAA/NS/MX/TXT (default no) · crt.sh terms and real limit
-(re-check in M2) · Python 3.14 wheel support (verify in M1).
+(re-check in M2).

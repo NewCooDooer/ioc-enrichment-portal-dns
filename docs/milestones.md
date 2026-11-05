@@ -313,3 +313,10 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Not verified: Streamlit decided not to show the popup again after its first appearance on this machine, so I confirmed the hiding rule on a stand-in element carrying the same marker, not on the real popup.
 - Pull request: #6 "Fix theme: icon font, Streamlit popup, raw JSON layout": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/6
 
+## Follow-up fix: the web page listened on every network interface
+- Branch: `fix/frontend-localhost-only`
+- Found while writing the study guide: Streamlit printed a "Network URL" at startup. Measured before the fix: the page listened on `*:8510` and this Mac's own LAN address returned the full page (HTTP 200), so anyone on the same network could run lookups through it. The backend was already safe (`127.0.0.1`).
+- Fixed: `[server] address = "127.0.0.1"` in `.streamlit/config.toml`; README and design.md updated; `tests/test_config.py` asserts both parts default to localhost.
+- Verified after the fix: see the pull request description.
+- Pull request: _filled in after it is opened_
+

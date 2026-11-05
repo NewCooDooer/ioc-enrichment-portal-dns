@@ -95,11 +95,26 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' python -m pytest -v
 The suite covers a hit, an unknown name, a source error (a real recorded crt.sh 502), all-sources-failed (502), simulated timeout / 429 /
 bad body, input validation and the frontend's backend client.
 
+## What it looks like
+
+The page is a Windows 95 desktop. **Trojan Tim**, a chipper pixel bug, tells you what to do and narrates results in plain language. He only reports facts (never a verdict), and when a source could not be checked he says so instead of implying there was nothing to find. The look is pure CSS with system fonts and one embedded image, so the page contacts no outside server.
+
+| Welcome | All three sources |
+|---|---|
+| ![Idle screen with Trojan Tim](docs/screenshots/win95-1-idle.jpg) | ![Results from DNS, RDAP and crt.sh](docs/screenshots/win95-2-all-three-sources.jpg) |
+
+| A source that failed (crt.sh 502) | Invalid input | Backend not running |
+|---|---|---|
+| ![crt.sh error dialog](docs/screenshots/win95-3-crtsh-error.jpg) | ![Invalid input](docs/screenshots/win95-4-invalid-input.jpg) | ![Backend unreachable](docs/screenshots/win95-5-backend-down.jpg) |
+
+It also works on a phone-sized screen: ![Mobile layout](docs/screenshots/win95-6-mobile.jpg)
+
 ## Layout
 
 ```
 backend/app/   main.py (API), validation.py, models.py, service.py, config.py, sources/{doh,rdap,crtsh,common}.py
-frontend/      app.py (Streamlit page), client.py (calls the backend only)
+frontend/      app.py (page), client.py (calls the backend only), theme.py (Windows 95 CSS), mascot.py (Trojan Tim), render.py (escaped HTML)
+.streamlit/    config.toml (theme colours, no usage stats)
 tests/         test_*.py and fixtures/ (recorded real responses)
 scripts/       record_fixtures.py (run by hand to re-record)
 docs/          interview.md, milestones.md, screenshots/

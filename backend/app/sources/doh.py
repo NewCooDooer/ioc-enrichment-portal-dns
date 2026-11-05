@@ -5,13 +5,10 @@ import asyncio
 import httpx
 
 from backend.app import config
+from backend.app.sources.common import error_block as _error
 
 RECORD_TYPES = {"A": 1, "NS": 2, "MX": 15, "TXT": 16, "AAAA": 28}
 RCODE_NAMES = {0: "NOERROR", 2: "SERVFAIL", 3: "NXDOMAIN", 5: "REFUSED"}
-
-
-def _error(code: str, message: str) -> dict:
-    return {"status": "error", "data": None, "error": {"code": code, "message": message}}
 
 
 async def _query(client: httpx.AsyncClient, name: str, rtype: str) -> dict:

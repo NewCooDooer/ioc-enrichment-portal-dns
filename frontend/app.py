@@ -31,8 +31,33 @@ def render_dns(data: dict) -> None:
             st.markdown(f"**{rtype}**: no records")
 
 
-def render_generic(data: dict) -> None:
-    st.json(data)
+def render_rdap(data: dict) -> None:
+    st.table([
+        {"field": "Registrar", "value": data.get("registrar") or "not stated"},
+        {"field": "Registered", "value": data.get("registered") or "not stated"},
+        {"field": "Expires", "value": data.get("expires") or "not stated"},
+        {"field": "Last changed", "value": data.get("last_changed") or "not stated"},
+        {"field": "Status flags", "value": ", ".join(data.get("statuses", [])) or "none"},
+        {"field": "Name servers", "value": ", ".join(data.get("nameservers", [])) or "none"},
+    ])
+    st.caption(f"Registry record: {data.get('registry_url')}")
+
+
+def render_crtsh(data: dict) -> None:
+    st.markdown(
+        f"**{data['certificate_count']}** certificates, first seen **{data['first_seen']}**, "
+        f"most recent **{data['last_seen']}**"
+    )
+    st.markdown("**Issuers**")
+    for issuer in data["issuers"]:
+        st.text(issuer)
+    st.markdown(f"**Names on the certificates** ({len(data['names'])} shown)")
+    st.text("\n".join(data["names"]))
+    if data.get("names_truncated"):
+        st.caption("List truncated; more names exist.")
+
+
+RENDERERS = {"dns": render_dns, "rdap": render_rdap, "crtsh": render_crtsh}
 
 
 def render_source(key: str, block: dict) -> None:
@@ -42,9 +67,10 @@ def render_source(key: str, block: dict) -> None:
         status = block["status"]
         if status == "ok":
             st.success("OK: the source answered with data.")
-            (render_dns if key == "dns" else render_generic)(block["data"])
+            RENDERERS[key](block["data"])
         elif status == "not_found":
-            st.info("Not found: the source answered that it knows nothing about this name.")
+            st.info("Not found: the source answered that it knows nothing about this name."
+                    + (" RDAP only covers registered domains, so subdomains usually show this." if key == "rdap" else ""))
         else:
             err = block.get("error", {})
             st.error(f"Error ({err.get('code', 'unknown')}): {err.get('message', '')} "

@@ -76,7 +76,7 @@ Also verified: a nonexistent name returns 200 with `"dns": {"status": "not_found
 #2 "Milestone 1: thinnest slice (Google DoH, FastAPI + Streamlit)": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/2
 
 ## Milestone 2: three sources, recorded tests
-- Status: built and verified 2026-11-05; PR number below
+- Status: built and verified 2026-11-05; PR #3 open for review
 - Branch: `feat/milestone-2` (plan written in plan mode and approved first)
 - Sources: Google DoH, RDAP (rdap.org), crt.sh. All keyless; no key or token anywhere
 
@@ -285,4 +285,4 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Subdomains show RDAP `not_found` because RDAP only covers registered domains; decided to look the name up as typed.
 
 ### Pull request
-_filled in after the PR is opened_
+#3 "Milestone 2: three sources and recorded offline tests": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/3

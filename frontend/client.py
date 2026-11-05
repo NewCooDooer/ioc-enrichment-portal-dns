@@ -23,7 +23,7 @@ class Result:
         return self.status_code == 200
 
 
-def fetch_domain(name: str, base_url: str | None = None, timeout: float = 30.0) -> Result:
+def fetch_domain(name: str, base_url: str | None = None, timeout: float = 45.0) -> Result:
     base_url = (base_url or os.getenv("BACKEND_URL", DEFAULT_BACKEND_URL)).rstrip("/")
     url = f"{base_url}/api/v1/domain/{quote(name.strip(), safe='')}"
     try:

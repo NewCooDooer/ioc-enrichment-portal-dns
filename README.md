@@ -3,8 +3,9 @@
 A SOC lookup tool: enter a DNS name and see enrichment from real, keyless public sources in one place.
 Python only, with a **FastAPI backend** and a separate **Streamlit frontend** that talks only to the backend.
 
-**Status: Milestone 1 (thinnest slice).** One source works end to end: Google Public DNS over HTTPS
-(A, AAAA, NS, MX, TXT records). RDAP and crt.sh arrive in Milestone 2.
+**Status: Milestone 2.** Three real, keyless sources in one response: Google Public DNS over HTTPS (where the name points),
+RDAP (who registered it and when) and crt.sh (which TLS certificates were issued). If one source fails, the other two still return
+and the failed one says what went wrong. Tests replay recorded real responses and run with the network off.
 Plan, API contract and decisions: [`design.md`](design.md). Progress and evidence: [`docs/milestones.md`](docs/milestones.md).
 
 > **Do not enter internal or private names** (`*.corp`, `*.local`, your company's own domains).
@@ -55,13 +56,26 @@ Two portals on one laptop: give each its own ports, e.g. `BACKEND_PORT=8011 pyth
 ## Try the API
 
 ```bash
-curl -s http://127.0.0.1:8010/api/v1/domain/example.com      # 200, JSON with the DNS source
+curl -s http://127.0.0.1:8010/api/v1/domain/example.com      # 200, JSON with dns, rdap and crtsh
 curl -s http://127.0.0.1:8010/api/v1/domain/10.0.0.1         # 400, {"error": ..., "input": ...}
 curl -s http://127.0.0.1:8010/api/v1/health                  # {"status": "ok"}
 ```
 
 Each source in the response has a `status`: `ok`, `not_found` (the source answered "nothing known") or
-`error` (the check could not be completed). See [`design.md`](design.md) section 4 for the full contract.
+`error` (the check could not be completed; `error.code` and `error.message` say why). A failing source never changes the
+HTTP status; only when **all** sources fail does the API return 502. See [`design.md`](design.md) section 4 for the full contract.
+
+Notes: **crt.sh is slow and often returns HTTP 502**, so expect its card to show an error some of the time. RDAP only covers
+registered domains, so a subdomain such as `login.example.com` normally shows RDAP "not found".
+
+### See a source fail on purpose
+
+Point one source at an address where nothing listens (the defaults are the real services):
+
+```bash
+CRTSH_URL=http://127.0.0.1:9/ python -m backend
+curl -s http://127.0.0.1:8010/api/v1/domain/example.com   # dns and rdap ok, crtsh {"status":"error", ...}
+```
 
 ## Test
 
@@ -69,13 +83,23 @@ Each source in the response has a `status`: `ok`, `not_found` (the source answer
 python -m pytest
 ```
 
-Milestone 1 tests cover input validation only and make no network calls. Recorded-response tests for the sources come in Milestone 2.
+No API key and no network needed. The tests replay real responses recorded in `tests/fixtures/` (saved with
+`python scripts/record_fixtures.py`, which stores only status, URL and body, never headers). `pytest-socket` makes any real
+network call fail the test. To prove it at the operating-system level on macOS:
+
+```bash
+sandbox-exec -p '(version 1)(allow default)(deny network*)' python -m pytest -v
+```
+
+The suite covers a hit, an unknown name, a source error (a real recorded crt.sh 502), all-sources-failed (502), simulated timeout / 429 /
+bad body, input validation and the frontend's backend client.
 
 ## Layout
 
 ```
-backend/app/   main.py (API), validation.py, models.py, service.py, config.py, sources/doh.py
+backend/app/   main.py (API), validation.py, models.py, service.py, config.py, sources/{doh,rdap,crtsh,common}.py
 frontend/      app.py (Streamlit page), client.py (calls the backend only)
-tests/         test_validation.py
+tests/         test_*.py and fixtures/ (recorded real responses)
+scripts/       record_fixtures.py (run by hand to re-record)
 docs/          interview.md, milestones.md, screenshots/
 ```

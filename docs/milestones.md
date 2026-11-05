@@ -311,5 +311,5 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Fixed: the font rule now skips icon elements and the icon font is restored explicitly; the developer popup is hidden; the Raw JSON uses explicit `<br>` line breaks and `&nbsp;` indentation (every value still HTML-escaped).
 - Verified: 78 tests pass (2 new); three deliberate breaks (icons overridden again, popup shown again, back to `<pre>`) each failed the matching test; in the live page an element with Streamlit's icon marker gets "Material Symbols Rounded" (a 16 px glyph, not a 12-letter word), an element with the popup marker is `display: none`, and normal text keeps the Windows 95 font; the opened Raw JSON panel shows indented lines (`docs/screenshots/win95-7-raw-json-open.jpg`).
 - Not verified: Streamlit decided not to show the popup again after its first appearance on this machine, so I confirmed the hiding rule on a stand-in element carrying the same marker, not on the real popup.
-- Pull request: _filled in after it is opened_
+- Pull request: #6 "Fix theme: icon font, Streamlit popup, raw JSON layout": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/6
 

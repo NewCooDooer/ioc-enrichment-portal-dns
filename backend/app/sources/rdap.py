@@ -2,6 +2,8 @@
 
 rdap.org answers with a 302 redirect to the registry's own RDAP server, so the client must follow redirects.
 The name is looked up exactly as typed: a subdomain such as login.example.com is normally "not_found".
+rdap.org also answers 404 for top-level domains it has no RDAP server for (seen for .de and .io), so
+"not_found" means: no such domain, not a registered domain, OR a TLD that rdap.org does not cover.
 """
 
 import httpx

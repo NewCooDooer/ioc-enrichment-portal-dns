@@ -14,8 +14,9 @@ BACKEND_HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8010"))
 
 SOURCE_TIMEOUT_SECONDS = float(os.getenv("SOURCE_TIMEOUT_SECONDS", "10"))
-# crt.sh is slow (a good answer took ~16 s on 2026-11-05), so it gets its own, longer timeout.
-CRTSH_TIMEOUT_SECONDS = float(os.getenv("CRTSH_TIMEOUT_SECONDS", "25"))
+# crt.sh is slow: good answers took 16 to 54 s on 2026-11-05, so it gets its own, much longer timeout.
+# Keep the frontend's wait (frontend/client.py) longer than this, or the page gives up before the backend does.
+CRTSH_TIMEOUT_SECONDS = float(os.getenv("CRTSH_TIMEOUT_SECONDS", "60"))
 
 USER_AGENT = "ioc-enrichment-portal-dns/0.1 (training project)"
 DOH_URL = os.getenv("DOH_URL", "https://dns.google/resolve")

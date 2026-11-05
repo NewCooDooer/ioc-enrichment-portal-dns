@@ -28,7 +28,7 @@ Browser → Streamlit frontend (:8510) ──HTTP/JSON──► FastAPI backend 
 
 - Two separate Python apps in `backend/` and `frontend/`. The frontend calls **only** the backend (`BACKEND_URL`,
   default `http://127.0.0.1:8010`) and never a source.
-- The backend validates the input, queries the three sources **concurrently** (`asyncio` + `httpx`, 10 s timeout each; crt.sh gets 25 s because it is slow),
+- The backend validates the input, queries the three sources **concurrently** (`asyncio` + `httpx`, 10 s timeout each; crt.sh gets 60 s because good answers took 16 to 54 s; the frontend waits up to 75 s),
   and returns one merged JSON object. Source errors never crash it.
 - Frontend: one text box and button; one card per source (ok / not found / error + message); clear messages for 400/502.
 - Ports are configurable (`BACKEND_PORT`, `FRONTEND_PORT`). Defaults avoid 8000/8501 so two portals can share a laptop.
@@ -82,7 +82,8 @@ Example for `example.com`, abridged (real values from 2026-11-05; crt.sh really 
 or `missing_key` (reserved). **`not_found` is an answer; `error` is not**, so callers can tell "no data" from "failed".
 crt.sh `data` is a summary: `certificate_count`, `first_seen`, `last_seen`, up to 10 `issuers`, up to 50 `names`
 (`names_truncated`); certificates are counted once per serial number (precertificate and final certificate are the same certificate).
-RDAP looks up the name exactly as typed, so a subdomain such as `login.example.com` normally shows RDAP `not_found`.
+RDAP looks up the name exactly as typed. RDAP `not_found` therefore means one of three things: no such domain; a subdomain
+(RDAP only covers registered domains, so `login.example.com` normally shows it); or a top-level domain rdap.org has no RDAP server for (seen for `.de` and `.io`).
 
 ### Other endpoints and errors
 `GET /api/v1/health` → `200 {"status":"ok"}`. One error format everywhere: `{"error": "...", "input": "..."}`.
@@ -101,7 +102,7 @@ Unknown routes return 404 `{"error": "not found"}` in the same format. The path 
 | Source | Key | Limit | Terms / notes |
 |---|---|---|---|
 | **Google Public DNS JSON** `https://dns.google/resolve` ([docs](https://developers.google.com/speed/public-dns/docs/doh/json)) | No | Default **1500 queries/s per client IP** (IPv4 or IPv6 /64), short bursts allowed ([ISP docs](https://developers.google.com/speed/public-dns/docs/isp)); [troubleshooting page](https://developers.google.com/speed/public-dns/docs/troubleshooting) says **1000**. Neither mentions DoH specifically; on excess expect 429 + `Retry-After`. | Free, **no SLA**. [Privacy page](https://developers.google.com/speed/public-dns/privacy): IP + queried domain in temporary logs 24–48 h; sampled permanent log keeps the domain and coarse location. **Every name we look up is disclosed to Google.** |
-| **RDAP** `https://rdap.org/domain/{name}` ([about](https://about.rdap.org/)) | No | **10 requests per 10 s**, then 429. | 302 redirect to the registry (client must follow); 404 = unknown; 403 = blocked for abuse. No formal ToS. |
+| **RDAP** `https://rdap.org/domain/{name}` ([about](https://about.rdap.org/)) | No | **10 requests per 10 s**, then 429. | 302 redirect to the registry (client must follow); 404 = unknown name, subdomain, or a TLD it does not cover (`.de`, `.io`); 403 = blocked for abuse. No formal ToS. |
 | **crt.sh** `https://crt.sh/?q={name}&output=json` | No | None published; ~5/min reported by third parties (unverified). | No official terms found (run by Sectigo). Observed 2026-11-05: **HTTP 502 about 4 times in 5**; successful answers took 1 to 54 s. One call per lookup. Re-checked in M2: still no official terms. |
 
 "None published" does not mean unlimited; tests never call these services.

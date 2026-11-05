@@ -9,7 +9,7 @@ Evidence for each milestone (commands, JSON, screenshots, pull requests). Update
 - Pull request: #1 "Milestone 0: design.md for DNS-name IOC enrichment portal"
 
 ## Milestone 1: thinnest slice (Google DoH)
-- Status: built and verified 2026-11-05; PR #2 open for review
+- Status: done (merged via PR #2)
 - Branch: `feat/milestone-1`
 - Plan: written in plan mode from `design.md` and approved before any code
 - Source: Google Public DNS over HTTPS (keyless). Python 3.14.7, FastAPI 0.162.0, Streamlit 1.67.0, httpx 0.28.1
@@ -76,5 +76,213 @@ Also verified: a nonexistent name returns 200 with `"dns": {"status": "not_found
 #2 "Milestone 1: thinnest slice (Google DoH, FastAPI + Streamlit)": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/2
 
 ## Milestone 2: three sources, recorded tests
-- Status: not started
-- Evidence to capture: JSON with all three sources; test output with network off; response with one failed source and how it was forced; PR title and number
+- Status: built and verified 2026-11-05; PR number below
+- Branch: `feat/milestone-2` (plan written in plan mode and approved first)
+- Sources: Google DoH, RDAP (rdap.org), crt.sh. All keyless; no key or token anywhere
+
+### Definition of done (design.md section 8)
+| Check | Result |
+|---|---|
+| One response holds a result from each of three real sources | ✔ evidence 1 |
+| A failing source still returns the other two, with its error shown; all failing → 502 | ✔ evidence 3 + tests |
+| Tests replay recorded responses and pass with the network off | ✔ evidence 2 (49 passed, also under an OS-level network-deny sandbox) |
+| Tests cover a hit, an unknown name and a source error | ✔ `tests/test_api_contract.py` |
+| No key in any recording or commit | ✔ fixtures hold only URL, status and body; grep for key/token/authorization/cookie finds nothing; e-mail-bearing certificate rows removed |
+| design.md and README match the code | ✔ updated in this PR |
+| Merged to main through a PR | see PR link at the bottom |
+
+### Evidence 1: backend JSON for one IOC with all three sources
+```
+$ curl -s -m 70 http://127.0.0.1:8010/api/v1/domain/example.com      # HTTP 200, took about 16 s (crt.sh is slow)
+```
+```json
+{
+  "ioc": {
+    "type": "domain",
+    "input": "example.com",
+    "value": "example.com"
+  },
+  "sources": {
+    "dns": {
+      "status": "ok",
+      "data": {
+        "resolver": "dns.google",
+        "rcode": "NOERROR",
+        "A": [
+          { "value": "104.20.23.154", "ttl": 300 },
+          { "value": "172.66.147.243", "ttl": 300 }
+        ],
+        "AAAA": [
+          { "value": "2606:4700:10::ac42:93f3", "ttl": 245 },
+          { "value": "2606:4700:10::6814:179a", "ttl": 245 }
+        ],
+        "NS": [
+          { "value": "elliott.ns.cloudflare.com.", "ttl": 21600 },
+          { "value": "hera.ns.cloudflare.com.", "ttl": 21600 }
+        ],
+        "MX": [
+          { "value": "0 .", "ttl": 44 }
+        ],
+        "TXT": [
+          { "value": "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9", "ttl": 300 },
+          { "value": "v=spf1 -all", "ttl": 300 }
+        ]
+      }
+    },
+    "rdap": {
+      "status": "ok",
+      "data": {
+        "registrar": "RESERVED-Internet Assigned Numbers Authority",
+        "registered": "1995-08-14T04:00:00Z",
+        "expires": "2027-08-13T04:00:00Z",
+        "last_changed": "2026-08-14T08:01:43Z",
+        "statuses": [
+          "client delete prohibited",
+          "client transfer prohibited",
+          "client update prohibited"
+        ],
+        "nameservers": [
+          "elliott.ns.cloudflare.com",
+          "hera.ns.cloudflare.com"
+        ],
+        "registry_url": "https://rdap.verisign.com/com/v1/domain/example.com"
+      }
+    },
+    "crtsh": {
+      "status": "ok",
+      "data": {
+        "certificate_count": 45,
+        "first_seen": "2010-09-02T16:36:49",
+        "last_seen": "2026-09-26T22:49:11",
+        "issuers": [
+          "C=GB, O=Sectigo Limited, CN=Sectigo Public Server Authentication CA DV E36",
+          "C=GB, O=Sectigo Limited, CN=Sectigo Public Server Authentication CA DV R36",
+          "C=GB, O=Sectigo Limited, CN=Sectigo Public Server Authentication CA OV R36",
+          "C=GB, ST=Cymru, O=AS207960 Cyfyngedig, OU=AS207960 Department of Random Numbers, CN=AS207960 Test CA",
+          "C=GB, ST=Greater Manchester, L=Salford, O=Sectigo Limited, CN=Sectigo ECC Organization Validation Secure Server CA",
+          "C=GB, ST=Greater Manchester, L=Salford, O=Sectigo Limited, CN=Sectigo RSA Domain Validation Secure Server CA",
+          "C=US, O=\"CLOUDFLARE, INC.\", CN=Cloudflare TLS Issuing ECC CA 1",
+          "C=US, O=\"CLOUDFLARE, INC.\", CN=Cloudflare TLS Issuing RSA CA 1",
+          "C=US, O=\"thawte, Inc.\", CN=thawte SSL CA - G2",
+          "C=US, O=DigiCert Inc, CN=DigiCert Global G2 TLS RSA SHA256 2020 CA1"
+        ],
+        "names": [
+          "*.example.com",
+          "AS207960 Test Intermediate - example.com",
+          "dev.example.com",
+          "example.com",
+          "m.example.com",
+          "m.testexample.com",
+          "products.example.com",
+          "subjectname@example.com",
+          "support.example.com",
+          "user@example.com",
+          "www.example.com"
+        ],
+        "names_truncated": false
+      }
+    }
+  }
+}
+```
+(Whitespace reformatted; values are what the backend returned. crt.sh's `names` list shows the raw certificate names, which for example.com include a few sample e-mail style entries and test CA names.)
+
+### Evidence 2: test output with the network off
+```
+$ sandbox-exec -p '(version 1)(allow default)(deny network*)' .venv/bin/python -m pytest -v
+...
+======================== 49 passed, 2 warnings in 0.26s ========================
+```
+- `sandbox-exec` with `(deny network*)` makes the operating system refuse every network connection; a direct test confirmed a real connect fails with `PermissionError: Operation not permitted`. Wi-Fi was not touched.
+- The suite also enables `pytest-socket` (`--disable-socket`), and `tests/test_offline.py` asserts that a real connection raises `SocketBlockedError`.
+- Breaking the code on purpose made the tests fail (mutation checks: skipping crt.sh's status check, and disabling the all-failed 502 rule), then I restored it.
+- Test files: `test_api_contract.py` (hit, unknown, recorded crt.sh 502, simulated timeout / 429 / bad body, unexpected bug, all-fail 502, 400, 404), `test_sources.py`, `test_frontend_client.py`, `test_validation.py`, `test_offline.py`.
+
+### Evidence 3: one source fails, and how I made it fail
+How: started the backend with the crt.sh address pointed at a port where nothing is listening (the other two sources use their real defaults):
+```
+$ CRTSH_URL=http://127.0.0.1:9/ python -m backend
+$ curl -s -i http://127.0.0.1:8010/api/v1/domain/example.com
+HTTP/1.1 200 OK
+server: uvicorn
+content-length: 1124
+content-type: application/json
+```
+```json
+{
+  "ioc": {
+    "type": "domain",
+    "input": "example.com",
+    "value": "example.com"
+  },
+  "sources": {
+    "dns": {
+      "status": "ok",
+      "data": {
+        "resolver": "dns.google",
+        "rcode": "NOERROR",
+        "A": [
+          { "value": "172.66.147.243", "ttl": 300 },
+          { "value": "104.20.23.154", "ttl": 300 }
+        ],
+        "AAAA": [
+          { "value": "2606:4700:10::ac42:93f3", "ttl": 204 },
+          { "value": "2606:4700:10::6814:179a", "ttl": 204 }
+        ],
+        "NS": [
+          { "value": "hera.ns.cloudflare.com.", "ttl": 19045 },
+          { "value": "elliott.ns.cloudflare.com.", "ttl": 19045 }
+        ],
+        "MX": [
+          { "value": "0 .", "ttl": 151 }
+        ],
+        "TXT": [
+          { "value": "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9", "ttl": 274 },
+          { "value": "v=spf1 -all", "ttl": 274 }
+        ]
+      }
+    },
+    "rdap": {
+      "status": "ok",
+      "data": {
+        "registrar": "RESERVED-Internet Assigned Numbers Authority",
+        "registered": "1995-08-14T04:00:00Z",
+        "expires": "2027-08-13T04:00:00Z",
+        "last_changed": "2026-08-14T08:01:43Z",
+        "statuses": [
+          "client delete prohibited",
+          "client transfer prohibited",
+          "client update prohibited"
+        ],
+        "nameservers": [
+          "elliott.ns.cloudflare.com",
+          "hera.ns.cloudflare.com"
+        ],
+        "registry_url": "https://rdap.verisign.com/com/v1/domain/example.com"
+      }
+    },
+    "crtsh": {
+      "status": "error",
+      "data": null,
+      "error": {
+        "code": "upstream_error",
+        "message": "could not reach crt.sh: ConnectError"
+      }
+    }
+  }
+}
+```
+(The `data` of `dns` and `rdap` is omitted here for length; it is the same as evidence 1.) The request still succeeds with HTTP 200; the failed source says `upstream_error` and why.
+The real crt.sh also failed naturally: during testing it returned HTTP 502 for most calls, and one such 502 is recorded in `tests/fixtures/crtsh/error_502.json` and replayed by a test.
+
+### Recording the fixtures
+`python scripts/record_fixtures.py` saved real responses for a hit (`example.com`) and an unknown name (`this-does-not-exist-zzqq1234.com`) from each source, plus a real crt.sh 502.
+crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three of 85 certificate rows were dropped because their names contain e-mail addresses.
+
+### Observations while building
+- crt.sh succeeded about 1 time in 5 and sometimes took 16 to 54 s, so it has its own 25 s timeout (others 10 s).
+- One lookup in about 16 had the DNS source fail with `RemoteProtocolError` (a dropped connection). It showed up correctly as a `dns` error block while the others returned, and did not repeat in 12 further lookups. No retry was added (retries are out of scope).
+- Subdomains show RDAP `not_found` because RDAP only covers registered domains; decided to look the name up as typed.
+
+### Pull request
+_filled in after the PR is opened_

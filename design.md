@@ -28,7 +28,7 @@ Browser → Streamlit frontend (:8510) ──HTTP/JSON──► FastAPI backend 
 
 - Two separate Python apps in `backend/` and `frontend/`. The frontend calls **only** the backend (`BACKEND_URL`,
   default `http://127.0.0.1:8010`) and never a source.
-- The backend validates the input, queries the three sources **concurrently** (`asyncio` + `httpx`, 10 s timeout each),
+- The backend validates the input, queries the three sources **concurrently** (`asyncio` + `httpx`, 10 s timeout each; crt.sh gets 25 s because it is slow),
   and returns one merged JSON object. Source errors never crash it.
 - Frontend: one text box and button; one card per source (ok / not found / error + message); clear messages for 400/502.
 - Ports are configurable (`BACKEND_PORT`, `FRONTEND_PORT`). Defaults avoid 8000/8501 so two portals can share a laptop.
@@ -81,7 +81,8 @@ Example for `example.com`, abridged (real values from 2026-11-05; crt.sh really 
 `error` = no answer. `error.code` is `timeout`, `rate_limited` (429), `upstream_error` (5xx), `invalid_response`
 or `missing_key` (reserved). **`not_found` is an answer; `error` is not**, so callers can tell "no data" from "failed".
 crt.sh `data` is a summary: `certificate_count`, `first_seen`, `last_seen`, up to 10 `issuers`, up to 50 `names`
-(`names_truncated`). Milestone 1 returns only `dns`; `rdap` and `crtsh` are added in Milestone 2 without renaming fields.
+(`names_truncated`); certificates are counted once per serial number (precertificate and final certificate are the same certificate).
+RDAP looks up the name exactly as typed, so a subdomain such as `login.example.com` normally shows RDAP `not_found`.
 
 ### Other endpoints and errors
 `GET /api/v1/health` → `200 {"status":"ok"}`. One error format everywhere: `{"error": "...", "input": "..."}`.
@@ -101,7 +102,7 @@ Unknown routes return 404 `{"error": "not found"}` in the same format. The path 
 |---|---|---|---|
 | **Google Public DNS JSON** `https://dns.google/resolve` ([docs](https://developers.google.com/speed/public-dns/docs/doh/json)) | No | Default **1500 queries/s per client IP** (IPv4 or IPv6 /64), short bursts allowed ([ISP docs](https://developers.google.com/speed/public-dns/docs/isp)); [troubleshooting page](https://developers.google.com/speed/public-dns/docs/troubleshooting) says **1000**. Neither mentions DoH specifically; on excess expect 429 + `Retry-After`. | Free, **no SLA**. [Privacy page](https://developers.google.com/speed/public-dns/privacy): IP + queried domain in temporary logs 24–48 h; sampled permanent log keeps the domain and coarse location. **Every name we look up is disclosed to Google.** |
 | **RDAP** `https://rdap.org/domain/{name}` ([about](https://about.rdap.org/)) | No | **10 requests per 10 s**, then 429. | 302 redirect to the registry (client must follow); 404 = unknown; 403 = blocked for abuse. No formal ToS. |
-| **crt.sh** `https://crt.sh/?q={name}&output=json` | No | None published; ~5/min reported by third parties (unverified). | No official terms found (run by Sectigo). Observed **HTTP 502 on 2026-11-05**. One call per lookup. Re-check in M2. |
+| **crt.sh** `https://crt.sh/?q={name}&output=json` | No | None published; ~5/min reported by third parties (unverified). | No official terms found (run by Sectigo). Observed 2026-11-05: **HTTP 502 about 4 times in 5**; successful answers took 1 to 54 s. One call per lookup. Re-checked in M2: still no official terms. |
 
 "None published" does not mean unlimited; tests never call these services.
 
@@ -110,6 +111,8 @@ Unknown routes return 404 `{"error": "not found"}` in the same format. The path 
 - `scripts/record_fixtures.py` calls each real source once and saves **status + body only** to `tests/fixtures/<source>/<case>.json`.
 - Tests serve those files with **respx** to the real parsing code; **pytest-socket** fails any real network call.
   Proof: run `pytest` with Wi-Fi off.
+- To make a source fail on purpose in the running portal, set `CRTSH_URL` (or `DOH_URL`, `RDAP_URL`) to a dead address, e.g. `CRTSH_URL=http://127.0.0.1:9/`; defaults are the real services. `CRTSH_TIMEOUT_SECONDS` / `SOURCE_TIMEOUT_SECONDS` also override the timeouts.
+- crt.sh certificate rows whose names contain e-mail addresses are dropped from the recording (third-party personal data); the recorder does this and the fixture says so.
 - Per source: a **hit** (`example.com`), an **unknown** name, and an **error** (recorded crt.sh 502; 429 and timeout
   are simulated from recorded shapes and labeled as such). Also: validation, merged-contract and all-failed (502) tests.
 - Frontend: its backend-calling function is unit-tested with respx; the page itself is checked by hand with a screenshot.
@@ -137,7 +140,7 @@ and it is merged to `main` through a pull request. ✔ PR #1.
 5. `git grep` shows no key or token in any commit.
 6. Merged to `main` through a pull request.
 
-**Milestone 2: three sources, recorded tests.** Done when:
+**Milestone 2: three sources, recorded tests.** Evidence in `docs/milestones.md`. Done when:
 1. One response holds `dns`, `rdap` and `crtsh` results for a real name.
 2. With any one source failing, the other two still return and the failed block shows its error; all three failing returns 502.
 3. Tests replay recordings and pass with the network off, covering a hit, an unknown name and a source error.
@@ -148,4 +151,4 @@ and it is merged to `main` through a pull request. ✔ PR #1.
 ## 9. Open questions
 
 Cloudflare DoH as a fallback (default no) · record types beyond A/AAAA/NS/MX/TXT (default no) · crt.sh terms and real limit
-(re-check in M2).
+(none official; revisit if the portal is ever used beyond training) · retrying a stale connection after a transient DoH `RemoteProtocolError` (seen once in ~16 lookups; out of scope as a retry).

@@ -1,0 +1,14 @@
+# Windows 95 look: the detailed styling lives in frontend/theme.py. No external fonts or assets are loaded.
+[theme]
+base = "light"
+primaryColor = "#000080"
+backgroundColor = "#008080"
+secondaryBackgroundColor = "#c0c0c0"
+textColor = "#000000"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

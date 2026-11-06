@@ -18,8 +18,16 @@ def esc(value) -> str:
 
 def table(headers: list[str], rows: list[list], key_value: bool = False) -> str:
     """An escaped table. key_value=True keeps the first column on one line (labels such as "Last changed")."""
-    head = "".join(f"<th>{esc(h)}</th>" for h in headers)
-    body = "".join("<tr>" + "".join(f"<td>{esc(cell)}</td>" for cell in row) + "</tr>" for row in rows)
+    # Build the header cells, then each row of cells. esc() cleans every value so it can never run as code.
+    head = ""
+    for header in headers:
+        head += f"<th>{esc(header)}</th>"
+    body = ""
+    for row in rows:
+        cells = ""
+        for cell in row:
+            cells += f"<td>{esc(cell)}</td>"
+        body += "<tr>" + cells + "</tr>"
     css = "w95-table w95-kv" if key_value else "w95-table"
     return f'<div class="w95-scroll"><table class="{css}"><tr>{head}</tr>{body}</table></div>'
 
@@ -34,7 +42,10 @@ def dns_body(data: dict) -> str:
         records = data.get(rtype, [])
         parts.append(f"<h4>{rtype}</h4>")
         if records:
-            parts.append(table(["value", "ttl (s)"], [[r["value"], r["ttl"]] for r in records]))
+            rows = []
+            for record in records:
+                rows.append([record["value"], record["ttl"]])
+            parts.append(table(["value", "ttl (s)"], rows))
         else:
             parts.append("<p>no records</p>")
     return "".join(parts)
@@ -57,8 +68,14 @@ def crtsh_body(data: dict) -> str:
         f"<p><b>{esc(data['certificate_count'])}</b> certificates, first seen <b>{esc(data['first_seen'])}</b>, "
         f"most recent <b>{esc(data['last_seen'])}</b></p>"
     )
-    issuers = table(["issuer"], [[i] for i in data["issuers"]])
-    names = table(["names on the certificates"], [[n] for n in data["names"]])
+    issuer_rows = []
+    for issuer in data["issuers"]:
+        issuer_rows.append([issuer])
+    name_rows = []
+    for name in data["names"]:
+        name_rows.append([name])
+    issuers = table(["issuer"], issuer_rows)
+    names = table(["names on the certificates"], name_rows)
     note = "<p>List truncated; more names exist.</p>" if data.get("names_truncated") else ""
     return _ok_banner() + summary + "<h4>Issuers</h4>" + issuers + f"<h4>Names ({esc(len(data['names']))} shown)</h4>" + names + note
 

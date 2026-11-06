@@ -320,3 +320,10 @@ crt.sh needed many retries (up to 9 attempts; one good answer took 54 s). Three 
 - Verified after the fix: the page listens on 127.0.0.1:8510 only; localhost returns HTTP 200 and the Mac's LAN address is refused for both the page and the backend; 80 tests pass; re-binding to 0.0.0.0 makes the new test fail.
 - Pull request: #7 "Fix: web page listens on localhost only": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/7
 
+## Follow-up: readability cleanup (no behavior change)
+- Branch: `refactor/plain-code`
+- Why: the owner is a Python beginner and found some lines too dense to follow (for example the one-line `asyncio.gather(*(... for k in keys))` and the dictionary comprehensions). Chosen option: light cleanup only (not a rewrite).
+- What changed: the densest lines in `service.py`, `validation.py`, `doh.py`, `rdap.py`, `crtsh.py`, `render.py` and `mascot.py` are now plain loops with beginner-friendly comments; `main.py` gained explanatory comments only. Same files, same functions, same API.
+- Proof that nothing changed: before editing, the exact output of the app was recorded for 62 situations (real recordings, 25+ simulated source failures, bad input, 42 validation cases, parsers, rendering, Tim's text). After the cleanup the same script produced a byte-for-byte identical file. The recording script was itself checked to be repeatable (two runs identical). Also: 80 tests pass (also under the OS network-deny sandbox), Tim's picture data is identical to the version in git, and a live lookup against the real services still works.
+- Pull request: #8 "Readability cleanup: plain loops and comments, same behavior": https://github.com/NewCooDooer/ioc-enrichment-portal-dns/pull/8
+

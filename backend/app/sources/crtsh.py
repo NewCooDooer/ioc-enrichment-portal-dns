@@ -16,15 +16,20 @@ MAX_ISSUERS = 10
 
 def summarize(rows: list) -> dict:
     """Condense raw certificate rows. Precertificates and final certificates share a serial: count each once."""
-    serials: set[str] = set()
-    issuers: set[str] = set()
-    names: set[str] = set()
-    starts: list[str] = []
+    # A "set" keeps each value only once, which is exactly what we want for counting and for lists of unique names.
+    serials = set()
+    issuers = set()
+    names = set()
+    starts = []
     for row in rows:
         serials.add(row["serial_number"])
         issuers.add(row["issuer_name"])
         starts.append(row["not_before"])
-        names.update(line.strip() for line in row["name_value"].split("\n") if line.strip())
+        # One certificate can list several names, one per line. Add each non-empty line.
+        for line in row["name_value"].split("\n"):
+            cleaned = line.strip()
+            if cleaned:
+                names.add(cleaned)
     sorted_names = sorted(names)
     return {
         "certificate_count": len(serials),

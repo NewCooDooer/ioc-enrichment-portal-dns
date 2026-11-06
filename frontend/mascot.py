@@ -30,12 +30,12 @@ _COLORS = {"k": "#101010", "g": "#3ddc3d", "G": "#1f9a1f", "w": "#ffffff"}
 
 
 def _svg() -> str:
-    rects = "".join(
-        f'<rect x="{x}" y="{y}" width="1" height="1" fill="{_COLORS[c]}"/>'
-        for y, row in enumerate(_PIXELS)
-        for x, c in enumerate(row)
-        if c != "."
-    )
+    # One tiny square per coloured pixel. Walk every row (y) and every character in the row (x).
+    rects = ""
+    for y, row in enumerate(_PIXELS):
+        for x, colour_code in enumerate(row):
+            if colour_code != ".":  # "." means transparent: draw nothing
+                rects += f'<rect x="{x}" y="{y}" width="1" height="1" fill="{_COLORS[colour_code]}"/>'
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 {len(_PIXELS)}" '
         f'shape-rendering="crispEdges">{rects}</svg>'

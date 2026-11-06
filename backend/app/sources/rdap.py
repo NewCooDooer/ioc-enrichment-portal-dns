@@ -16,6 +16,7 @@ SERVICE = "RDAP"
 
 
 def _registrar(body: dict) -> str | None:
+    """Find the registrar's name. It is buried inside the "entities" list, in a contact-card ("vcard") format."""
     for entity in body.get("entities", []):
         if "registrar" in entity.get("roles", []):
             for item in entity.get("vcardArray", [None, []])[1]:
@@ -25,16 +26,37 @@ def _registrar(body: dict) -> str | None:
 
 
 def parse(body: dict, final_url: str) -> dict:
-    events = {e["eventAction"]: e["eventDate"] for e in body.get("events", [])}
-    self_links = [l["href"] for l in body.get("links", []) if l.get("rel") == "self"]
+    """Pick the facts we want out of RDAP's long reply."""
+    # The reply lists dated events like {"eventAction": "registration", "eventDate": "1995-08-14T04:00:00Z"}.
+    # Turn that list into a lookup table: {"registration": "1995-08-14...", "expiration": "...", ...}
+    events = {}
+    for event in body.get("events", []):
+        events[event["eventAction"]] = event["eventDate"]
+
+    # The registry's own page for this domain is the link marked "self" (if there is one).
+    self_links = []
+    for link in body.get("links", []):
+        if link.get("rel") == "self":
+            self_links.append(link["href"])
+    if self_links:
+        registry_url = self_links[0]
+    else:
+        registry_url = final_url
+
+    # Name servers, lowercased and in alphabetical order.
+    nameservers = []
+    for server in body.get("nameservers", []):
+        nameservers.append(server["ldhName"].lower())
+    nameservers.sort()
+
     return {
         "registrar": _registrar(body),
         "registered": events.get("registration"),
         "expires": events.get("expiration"),
         "last_changed": events.get("last changed"),
         "statuses": list(body.get("status", [])),
-        "nameservers": sorted(ns["ldhName"].lower() for ns in body.get("nameservers", [])),
-        "registry_url": self_links[0] if self_links else final_url,
+        "nameservers": nameservers,
+        "registry_url": registry_url,
     }
 
 
